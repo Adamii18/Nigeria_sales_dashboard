@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nigeria Market Sales Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f1923;
+            color: #fff;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0 20px;
+            border-bottom: 2px solid #008751;
+        }
+
+        header h1 { font-size: 1.9rem; color: #00d68f; }
+        header p { color: #aaa; margin-top: 6px; font-size: 0.9rem; }
+
+        .info-box {
+            background: #1a2634;
+            border-left: 5px solid #00d68f;
+            border-radius: 10px;
+            padding: 18px 24px;
+            margin: 24px auto;
+            max-width: 980px;
+        }
+
+        .info-box h2 { color: #00d68f; margin-bottom: 8px; font-size: 1rem; }
+        .info-box p { color: #ccc; line-height: 1.7; font-size: 0.9rem; }
+
+        /* FILTERS */
+        .filters {
+            background: #1a2634;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin: 0 auto 20px;
+            max-width: 980px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            min-width: 160px;
+        }
+
+        .filter-group label {
+            color: #00d68f;
+            font-size: 0.82rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            background: #0f1923;
+            color: #fff;
+            border: 1px solid #2a3a4a;
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            border-color: #00d68f;
+        }
+
+        .filter-btn {
+            background: #008751;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 9px 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            align-self: flex-end;
+        }
+
+        .filter-btn:hover { background: #00d68f; color: #0f1923; }
+        .filter-btn.reset { background: #cc3333; }
+        .filter-btn.reset:hover { background: #ff6b6b; color: #0f1923; }
+
+        /* TOGGLE */
+        .toggle-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 0 auto 20px;
+            max-width: 980px;
+            flex-wrap: wrap;
+        }
+
+        .toggle-btn {
+            background: #1a2634;
+            color: #aaa;
+            border: 2px solid #2a3a4a;
+            border-radius: 30px;
+            padding: 8px 22px;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            background: #008751;
+            color: #fff;
+            border-color: #00d68f;
+        }
+
+        /* CARDS */
+        .cards {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin: 0 auto 20px;
+            max-width: 980px;
+        }
+
+        .card {
+            background: #1a2634;
+            border-left: 5px solid #008751;
+            border-radius: 10px;
+            padding: 16px 20px;
+            flex: 1;
+            min-width: 140px;
+            max-width: 200px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .card:hover { transform: translateY(-3px); }
+        .card h2 { font-size: 1.4rem; color: #00d68f; }
+        .card p { color: #aaa; margin-top: 5px; font-size: 0.8rem; }
+        .card.red { border-left-color: #cc3333; }
+        .card.red h2 { color: #ff6b6b; }
+        .card.blue { border-left-color: #3399ff; }
+        .card.blue h2 { color: #66b2ff; }
+        .card.yellow { border-left-color: #f0a500; }
+        .card.yellow h2 { color: #f0c040; }
+
+        /* CHARTS */
+        .chart-container {
+            background: #1a2634;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 0 auto 20px;
+            max-width: 980px;
+        }
+
+        .chart-container h3 {
+            color: #00d68f;
+            margin-bottom: 14px;
+            font-size: 1rem;
+            border-bottom: 1px solid #2a3a4a;
+            padding-bottom: 10px;
+        }
+
+        .chart-row {
+            display: flex;
+            gap: 20px;
+            max-width: 980px;
+            margin: 0 auto 20px;
+            flex-wrap: wrap;
+        }
+
+        .chart-half {
+            background: #1a2634;
+            border-radius: 12px;
+            padding: 24px;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .chart-half h3 {
+            color: #00d68f;
+            margin-bottom: 14px;
+            font-size: 1rem;
+            border-bottom: 1px solid #2a3a4a;
+            padding-bottom: 10px;
+        }
+
+        /* TABLE */
+        .table-container {
+            background: #1a2634;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 0 auto 20px;
+            max-width: 980px;
+            overflow-x: auto;
+        }
+
+        .table-container h3 {
+            color: #00d68f;
+            margin-bottom: 14px;
+            font-size: 1rem;
+            border-bottom: 1px solid #2a3a4a;
+            padding-bottom: 10px;
+        }
+
+        .table-search {
+            background: #0f1923;
+            color: #fff;
+            border: 1px solid #2a3a4a;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 0.88rem;
+            width: 100%;
+            margin-bottom: 14px;
+            outline: none;
+        }
+
+        .table-search:focus { border-color: #00d68f; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        th {
+            background: #0f1923;
+            color: #00d68f;
+            padding: 10px 14px;
+            text-align: left;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        th:hover { color: #fff; }
+
+        td {
+            padding: 9px 14px;
+            border-bottom: 1px solid #1e2e3e;
+            color: #ccc;
+        }
+
+        tr:hover td { background: #1e2e3e; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: bold;
+        }
+
+        .badge-Oils { background: #1a3a2a; color: #00d68f; }
+        .badge-Proteins { background: #1a2a3a; color: #66b2ff; }
+        .badge-Vegetables { background: #2a3a1a; color: #90ee90; }
+        .badge-Grains { background: #3a2a1a; color: #f0c040; }
+        .badge-Condiments { background: #3a1a2a; color: #ff9999; }
+        .badge-Drinks { background: #1a3a3a; color: #80dfff; }
+
+        .table-footer {
+            color: #aaa;
+            font-size: 0.82rem;
+            margin-top: 12px;
+            text-align: right;
+        }
+
+        /* PAGINATION */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+
+        .page-btn {
+            background: #0f1923;
+            color: #aaa;
+            border: 1px solid #2a3a4a;
+            border-radius: 6px;
+            padding: 5px 12px;
+            font-size: 0.82rem;
+            cursor: pointer;
+        }
+
+        .page-btn.active { background: #008751; color: #fff; border-color: #008751; }
+        .page-btn:hover { border-color: #00d68f; color: #fff; }
+
+        /* INSIGHTS */
+        .section {
+            background: #1a2634;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 0 auto 20px;
+            max-width: 980px;
+        }
+
+        .section h3 {
+            color: #00d68f;
+            margin-bottom: 14px;
+            font-size: 1rem;
+            border-bottom: 1px solid #2a3a4a;
+            padding-bottom: 10px;
+        }
+
+        .insight-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 10px;
+            padding: 11px;
+            background: #0f1923;
+            border-radius: 8px;
+        }
+
+        .insight-item p { color: #ccc; font-size: 0.88rem; line-height: 1.6; }
+
+        .rec-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 11px;
+            background: #0f1923;
+            border-radius: 8px;
+            border-left: 3px solid #008751;
+        }
+
+        .rec-item p { color: #ccc; font-size: 0.88rem; line-height: 1.6; }
+
+        footer {
+            text-align: center;
+            color: #555;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #1a2634;
+            font-size: 0.82rem;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #aaa;
+            padding: 30px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🛒 Nigeria Market Sales Dashboard</h1>
+    <p>Interactive Sales Analysis | NBS Food Price Data 2024–2025 | nigerianstat.gov.ng</p>
+</header>
+
+<div class="info-box">
+    <h2>📖 About This Dashboard</h2>
+    <p>
+        Analyze <strong>1,000 sales transactions</strong> across <strong>26 food products</strong>
+        in 6 categories using real NBS Nigeria average prices. Use the filters below to explore
+        specific months, categories, or products. All charts and cards update instantly.
+    </p>
+</div>
+
+<!-- FILTERS -->
+<div class="filters">
+    <div class="filter-group">
+        <label>📅 Filter by Month</label>
+        <select id="filterMonth">
+            <option value="All">All Months</option>
+        </select>
+    </div>
+    <div class="filter-group">
+        <label>🏷️ Filter by Category</label>
+        <select id="filterCategory">
+            <option value="All">All Categories</option>
+        </select>
+    </div>
+    <div class="filter-group">
+        <label>🔍 Search Product</label>
+        <input type="text" id="searchProduct" placeholder="e.g. Rice, Beef...">
+    </div>
+    <button class="filter-btn" onclick="applyFilters()">Apply Filters</button>
+    <button class="filter-btn reset" onclick="resetFilters()">Reset</button>
+</div>
+
+<!-- TOGGLE -->
+<div class="toggle-row">
+    <button class="toggle-btn active" id="btnRevenue" onclick="setMetric('Revenue')">💰 Revenue View</button>
+    <button class="toggle-btn" id="btnQuantity" onclick="setMetric('Quantity')">📦 Quantity View</button>
+</div>
+
+<!-- CARDS -->
+<div class="cards">
+    <div class="card">
+        <h2 id="cardRevenue">—</h2>
+        <p>Total Revenue</p>
+    </div>
+    <div class="card blue">
+        <h2 id="cardOrders">—</h2>
+        <p>Total Transactions</p>
+    </div>
+    <div class="card yellow">
+        <h2 id="cardQty">—</h2>
+        <p>Total Qty Sold</p>
+    </div>
+    <div class="card">
+        <h2 id="cardAvg">—</h2>
+        <p>Avg Order Value</p>
+    </div>
+    <div class="card">
+        <h2 id="cardBest">—</h2>
+        <p>Best Month</p>
+    </div>
+    <div class="card red">
+        <h2 id="cardWorst">—</h2>
+        <p>Slowest Month</p>
+    </div>
+</div>
+
+<!-- LINE CHART -->
+<div class="chart-container">
+    <h3 id="lineTitle">📈 Monthly Revenue Trend</h3>
+    <canvas id="lineChart"></canvas>
+</div>
+
+<!-- DOUGHNUT + BAR -->
+<div class="chart-row">
+    <div class="chart-half">
+        <h3 id="doughnutTitle">🥧 Revenue by Category</h3>
+        <canvas id="doughnutChart"></canvas>
+    </div>
+    <div class="chart-half">
+        <h3 id="barTitle">🏆 Top 5 Products by Revenue</h3>
+        <canvas id="barChart"></canvas>
+    </div>
+</div>
+
+<!-- TABLE -->
+<div class="table-container">
+    <h3>📋 Transaction Data Table</h3>
+    <input class="table-search" type="text"
+        id="tableSearch" placeholder="🔍 Search any column..."
+        oninput="renderTable()">
+    <table>
+        <thead>
+            <tr>
+                <th onclick="sortTable('Month')">Month ↕</th>
+                <th onclick="sortTable('Product')">Product ↕</th>
+                <th onclick="sortTable('Category')">Category ↕</th>
+                <th onclick="sortTable('Unit_Price')">Unit Price ↕</th>
+                <th onclick="sortTable('Quantity')">Qty ↕</th>
+                <th onclick="sortTable('Revenue')">Revenue ↕</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+    <div class="pagination" id="pagination"></div>
+    <div class="table-footer" id="tableFooter"></div>
+</div>
+
+<!-- INSIGHTS -->
+<div class="section">
+    <h3>🔍 Key Insights</h3>
+    <div id="insightsBox"></div>
+</div>
+
+<!-- RECOMMENDATIONS -->
+<div class="section">
+    <h3>✅ Business Recommendations</h3>
+    <div class="rec-item"><p>→ Stock more Vegetable Oil and Cooking Oils — they generate the highest revenue consistently.</p></div>
+    <div class="rec-item"><p>→ Increase protein stock (Beef, Chicken, Fish) especially in Q4 when demand peaks.</p></div>
+    <div class="rec-item"><p>→ Run promotions in July and November to boost sales during slow months.</p></div>
+    <div class="rec-item"><p>→ Bundle low-selling items (Drinks, Condiments) with top sellers to increase average order value.</p></div>
+    <div class="rec-item"><p>→ Plan bulk purchasing in February–March when prices tend to be lower after festive season.</p></div>
+    <div class="rec-item"><p>→ Consider introducing more grain varieties — Grains category has strong growth potential.</p></div>
+</div>
+
+<footer>
+    <p>Built by <strong>Adam Ishaq Isah</strong> | Jaidatech Ventures — Kaduna, Nigeria</p>
+    <p style="margin-top:6px;">Data Source: NBS Selected Food Prices Watch 2024/2025 | nigerianstat.gov.ng</p>
+</footer>
+
+<script>
+    // ── RAW DATA FROM FLASK ──
+    const ALL_DATA = {{ raw_data | safe }};
+    const ALL_CATEGORIES = {{ categories | safe }};
+    const ALL_PRODUCTS = {{ products | safe }};
+    const MONTH_ORDER = {{ months | safe }};
+
+    // ── STATE ──
+    let filteredData = [...ALL_DATA];
+    let currentMetric = 'Revenue';
+    let sortKey = 'Month';
+    let sortAsc = true;
+    let currentPage = 1;
+    const ROWS_PER_PAGE = 15;
+
+    const COLORS = [
+        '#00d68f','#3399ff','#f0a500',
+        '#cc3333','#9b59b6','#1abc9c'
+    ];
+
+    // ── POPULATE FILTERS ──
+    function populateFilters() {
+        const monthSel = document.getElementById('filterMonth');
+        const catSel = document.getElementById('filterCategory');
+        MONTH_ORDER.forEach(m => {
+            const o = document.createElement('option');
+            o.value = m; o.textContent = m;
+            monthSel.appendChild(o);
+        });
+        ALL_CATEGORIES.forEach(c => {
+            const o = document.createElement('option');
+            o.value = c; o.textContent = c;
+            catSel.appendChild(o);
+        });
+    }
+
+    // ── APPLY FILTERS ──
+    function applyFilters() {
+        const month = document.getElementById('filterMonth').value;
+        const category = document.getElementById('filterCategory').value;
+        const search = document.getElementById('searchProduct').value.toLowerCase();
+
+        filteredData = ALL_DATA.filter(row => {
+            const matchMonth = month === 'All' || row.Month_Name === month;
+            const matchCat = category === 'All' || row.Category === category;
+            const matchSearch = search === '' || row.Product.toLowerCase().includes(search);
+            return matchMonth && matchCat && matchSearch;
+        });
+
+        currentPage = 1;
+        updateAll();
+    }
+
+    function resetFilters() {
+        document.getElementById('filterMonth').value = 'All';
+        document.getElementById('filterCategory').value = 'All';
+        document.getElementById('searchProduct').value = '';
+        filteredData = [...ALL_DATA];
+        currentPage = 1;
+        updateAll();
+    }
+
+    // ── METRIC TOGGLE ──
+    function setMetric(metric) {
+        currentMetric = metric;
+        document.getElementById('btnRevenue').classList.toggle('active', metric === 'Revenue');
+        document.getElementById('btnQuantity').classList.toggle('active', metric === 'Quantity');
+        updateCharts();
+        updateTitles();
+    }
+
+    function updateTitles() {
+        const m = currentMetric;
+        document.getElementById('lineTitle').textContent =
+            `📈 Monthly ${m} Trend`;
+        document.getElementById('doughnutTitle').textContent =
+            `🥧 ${m} by Category`;
+        document.getElementById('barTitle').textContent =
+            `🏆 Top 5 Products by ${m}`;
+    }
+
+    // ── HELPERS ──
+    function fmt(n) {
+        return '₦' + Number(n).toLocaleString('en-NG', {maximumFractionDigits: 0});
+    }
+
+    function groupBy(data, key, metric) {
+        const result = {};
+        data.forEach(row => {
+            const k = row[key];
+            result[k] = (result[k] || 0) + row[metric];
+        });
+        return result;
+    }
+
+    // ── CARDS ──
+    function updateCards() {
+        const d = filteredData;
+        if (d.length === 0) {
+            ['cardRevenue','cardOrders','cardQty','cardAvg','cardBest','cardWorst']
+                .forEach(id => document.getElementById(id).textContent = '—');
+            return;
+        }
+
+        const totalRev = d.reduce((s, r) => s + r.Revenue, 0);
+        const totalQty = d.reduce((s, r) => s + r.Quantity, 0);
+        const avgOrder = totalRev / d.length;
+
+        const monthly = {};
+        MONTH_ORDER.forEach(m => monthly[m] = 0);
+        d.forEach(r => { monthly[r.Month_Name] += r.Revenue; });
+        const months = Object.entries(monthly).filter(([,v]) => v > 0);
+        const best = months.length ? months.reduce((a,b) => a[1]>b[1]?a:b)[0] : '—';
+        const worst = months.length ? months.reduce((a,b) => a[1]<b[1]?a:b)[0] : '—';
+
+        document.getElementById('cardRevenue').textContent = fmt(totalRev);
+        document.getElementById('cardOrders').textContent = d.length.toLocaleString();
+        document.getElementById('cardQty').textContent = totalQty.toLocaleString();
+        document.getElementById('cardAvg').textContent = fmt(avgOrder);
+        document.getElementById('cardBest').textContent = best;
+        document.getElementById('cardWorst').textContent = worst;
+    }
+
+    // ── CHARTS ──
+    let lineChart, doughnutChart, barChart;
+
+    function updateCharts() {
+        const d = filteredData;
+        const metric = currentMetric;
+
+        // LINE
+        const monthlyVals = MONTH_ORDER.map(m =>
+            d.filter(r => r.Month_Name === m).reduce((s,r) => s + r[metric], 0)
+        );
+        lineChart.data.datasets[0].data = monthlyVals;
+        lineChart.data.datasets[0].label = `Monthly ${metric}`;
+        lineChart.update();
+
+        // DOUGHNUT
+        const catGroup = groupBy(d, 'Category', metric);
+        const catLabels = Object.keys(catGroup);
+        const catVals = Object.values(catGroup);
+        doughnutChart.data.labels = catLabels;
+        doughnutChart.data.datasets[0].data = catVals;
+        doughnutChart.update();
+
+        // BAR - Top 5
+        const prodGroup = groupBy(d, 'Product', metric);
+        const sorted = Object.entries(prodGroup)
+            .sort((a,b) => b[1]-a[1]).slice(0,5);
+        barChart.data.labels = sorted.map(x => x[0]);
+        barChart.data.datasets[0].data = sorted.map(x => x[1]);
+        barChart.data.datasets[0].label = `Top 5 by ${metric}`;
+        barChart.update();
+    }
+
+    function initCharts() {
+        const gridColor = '#2a3a4a';
+        const tickColor = '#aaa';
+
+        lineChart = new Chart(document.getElementById('lineChart'), {
+            type: 'line',
+            data: {
+                labels: MONTH_ORDER,
+                datasets: [{
+                    label: 'Monthly Revenue',
+                    data: [],
+                    borderColor: '#00d68f',
+                    backgroundColor: 'rgba(0,214,143,0.1)',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#fff' } } },
+                scales: {
+                    x: { ticks: { color: tickColor }, grid: { color: gridColor } },
+                    y: { ticks: { color: tickColor }, grid: { color: gridColor } }
+                }
+            }
+        });
+
+        doughnutChart = new Chart(document.getElementById('doughnutChart'), {
+            type: 'doughnut',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: COLORS,
+                    borderWidth: 2,
+                    borderColor: '#0f1923'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#fff', font: { size: 11 } } } }
+            }
+        });
+
+        barChart = new Chart(document.getElementById('barChart'), {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Top 5 by Revenue',
+                    data: [],
+                    backgroundColor: '#008751',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: { legend: { labels: { color: '#fff' } } },
+                scales: {
+                    x: { ticks: { color: tickColor }, grid: { color: gridColor } },
+                    y: { ticks: { color: tickColor, font: { size: 10 } }, grid: { color: gridColor } }
+                }
+            }
+        });
+    }
+
+    // ── TABLE ──
+    function sortTable(key) {
+        if (sortKey === key) sortAsc = !sortAsc;
+        else { sortKey = key; sortAsc = true; }
+        currentPage = 1;
+        renderTable();
+    }
+
+    function renderTable() {
+        const search = document.getElementById('tableSearch').value.toLowerCase();
+        let rows = filteredData.filter(r =>
+            Object.values(r).some(v => String(v).toLowerCase().includes(search))
+        );
+
+        // Sort
+        rows.sort((a, b) => {
+            let va = a[sortKey], vb = b[sortKey];
+            if (typeof va === 'string') va = va.toLowerCase();
+            if (typeof vb === 'string') vb = vb.toLowerCase();
+            return sortAsc ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+        });
+
+        const total = rows.length;
+        const totalPages = Math.ceil(total / ROWS_PER_PAGE);
+        const start = (currentPage - 1) * ROWS_PER_PAGE;
+        const pageRows = rows.slice(start, start + ROWS_PER_PAGE);
+
+        const tbody = document.getElementById('tableBody');
+        if (pageRows.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="no-data">No records found.</td></tr>';
+        } else {
+            tbody.innerHTML = pageRows.map(r => `
+                <tr>
+                    <td>${r.Month_Name}</td>
+                    <td>${r.Product}</td>
+                    <td><span class="badge badge-${r.Category}">${r.Category}</span></td>
+                    <td>${fmt(r.Unit_Price)}</td>
+                    <td>${r.Quantity}</td>
+                    <td>${fmt(r.Revenue)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Pagination
+        const pag = document.getElementById('pagination');
+        pag.innerHTML = '';
+        for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'page-btn' + (i === currentPage ? ' active' : '');
+            btn.textContent = i;
+            btn.onclick = () => { currentPage = i; renderTable(); };
+            pag.appendChild(btn);
+        }
+
+        document.getElementById('tableFooter').textContent =
+            `Showing ${start+1}–${Math.min(start+ROWS_PER_PAGE, total)} of ${total} records`;
+    }
+
+    // ── INSIGHTS ──
+    function updateInsights() {
+        const d = filteredData;
+        const box = document.getElementById('insightsBox');
+        if (d.length === 0) {
+            box.innerHTML = '<div class="insight-item"><p>No data matches your current filters.</p></div>';
+            return;
+        }
+
+        const totalRev = d.reduce((s,r) => s + r.Revenue, 0);
+        const totalOrders = d.length;
+        const catGroup = groupBy(d, 'Category', 'Revenue');
+        const topCat = Object.entries(catGroup).sort((a,b)=>b[1]-a[1])[0];
+        const prodGroup = groupBy(d, 'Product', 'Revenue');
+        const topProd = Object.entries(prodGroup).sort((a,b)=>b[1]-a[1])[0];
+        const monthly = {};
+        MONTH_ORDER.forEach(m => monthly[m] = 0);
+        d.forEach(r => { monthly[r.Month_Name] += r.Revenue; });
+        const months = Object.entries(monthly).filter(([,v])=>v>0);
+        const bestMonth = months.length ? months.reduce((a,b)=>a[1]>b[1]?a:b) : ['—',0];
+        const worstMonth = months.length ? months.reduce((a,b)=>a[1]<b[1]?a:b) : ['—',0];
+
+        const insights = [
+            `Total revenue of <strong>${fmt(totalRev)}</strong> was generated from <strong>${totalOrders}</strong> transactions.`,
+            `<strong>${topCat[0]}</strong> is the top category generating <strong>${fmt(topCat[1])}</strong> in revenue.`,
+            `<strong>${topProd[0]}</strong> is the best selling product with <strong>${fmt(topProd[1])}</strong> in revenue.`,
+            `<strong>${bestMonth[0]}</strong> was the strongest month at <strong>${fmt(bestMonth[1])}</strong>.`,
+            `<strong>${worstMonth[0]}</strong> was the slowest month at <strong>${fmt(worstMonth[1])}</strong>.`,
+            `Average transaction value stands at <strong>${fmt(totalRev/totalOrders)}</strong> per order.`
+        ];
+
+        box.innerHTML = insights.map(i => `
+            <div class="insight-item">
+                <span>💡</span>
+                <p>${i}</p>
+            </div>
+        `).join('');
+    }
+
+    // ── UPDATE ALL ──
+    function updateAll() {
+        updateCards();
+        updateCharts();
+        renderTable();
+        updateInsights();
+    }
+
+    // ── INIT ──
+    populateFilters();
+    initCharts();
+    updateAll();
+</script>
+
+</body>
+  </html>
